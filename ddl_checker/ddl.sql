@@ -1,0 +1,258 @@
+CREATE DATABASE IF NOT EXISTS `test`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`pk` INT PRIMARY KEY,`i` INT,`j` INT,INDEX `a`(`i`))
+ALTER TABLE `test`.`t1` RENAME INDEX `a` TO `b`
+ALTER TABLE `test`.`t1` RENAME INDEX `b` TO `c`
+ALTER TABLE `test`.`t1` ADD INDEX `d`(`j`)
+ALTER TABLE `test`.`t1` DROP INDEX `d`
+ALTER TABLE `test`.`t1` ADD INDEX `d`(`j`)
+ALTER TABLE `test`.`t1` DROP INDEX `c`
+ALTER TABLE `test`.`t1` RENAME INDEX `d` TO `c`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`a` INT,`b` INT,UNIQUE `u`(`a`),INDEX `k`(`b`))
+ALTER TABLE `test`.`t1` RENAME INDEX `u` TO `uu`
+ALTER TABLE `test`.`t1` RENAME INDEX `k` TO `kk`
+DROP TABLE IF EXISTS `test`.`t2`
+ALTER TABLE `test`.`t1` RENAME INDEX `kk` TO `kkk`
+ALTER TABLE `test`.`t1` ADD COLUMN `c` INT
+ALTER TABLE `test`.`t1` RENAME INDEX `uu` TO `uuu`
+ALTER TABLE `test`.`t1` ADD INDEX `c`(`c`)
+ALTER TABLE `test`.`t1` RENAME INDEX `kkk` TO `k`
+ALTER TABLE `test`.`t1` DROP INDEX `uuu`
+ALTER TABLE `test`.`t1` RENAME INDEX `k` TO `kk`
+ALTER TABLE `test`.`t1` RENAME AS `test`.`t2`
+ALTER TABLE `test`.`t2` RENAME INDEX `c` TO `cc`
+ALTER TABLE `test`.`t2` MODIFY COLUMN `c` BIGINT NOT NULL FIRST
+ALTER TABLE `test`.`t2` ADD UNIQUE `u`(`a`, `b`, `c`)
+ALTER TABLE `test`.`t2` RENAME INDEX `u` TO `uu`
+#ALTER TABLE `test`.`t2` DROP COLUMN `b`
+DROP TABLE IF EXISTS `test`.`t2`
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t2`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`i` INT,INDEX `k`(`i`)) ENGINE = myisam
+CREATE TABLE IF NOT EXISTS `test`.`t2` (`i` INT,INDEX `k`(`i`)) ENGINE = memory
+ALTER TABLE `test`.`t1` RENAME INDEX `k` TO `kk`
+ALTER TABLE `test`.`t2` RENAME INDEX `k` TO `kk`
+ALTER TABLE `test`.`t1` RENAME INDEX `kk` TO `kkk`
+ALTER TABLE `test`.`t2` RENAME INDEX `kk` TO `kkk`
+ALTER TABLE `test`.`t1`  /* AlterTableAlgorithm is not supported */ 
+ALTER TABLE `test`.`t1` RENAME INDEX `kkk` TO `kkkk`
+ALTER TABLE `test`.`t2`  /* AlterTableAlgorithm is not supported */ 
+ALTER TABLE `test`.`t2` RENAME INDEX `kkk` TO `kkkk`
+ALTER TABLE `test`.`t1`  /* AlterTableAlgorithm is not supported */ 
+ALTER TABLE `test`.`t1` RENAME INDEX `kkkk` TO `k`
+ALTER TABLE `test`.`t1` ALTER COLUMN `i` SET DEFAULT 100
+ALTER TABLE `test`.`t2`  /* AlterTableAlgorithm is not supported */ 
+ALTER TABLE `test`.`t2` RENAME INDEX `kkkk` TO `k`
+ALTER TABLE `test`.`t2` ALTER COLUMN `i` SET DEFAULT 100
+ALTER TABLE `test`.`t1` RENAME INDEX `k` TO `kk`
+ALTER TABLE `test`.`t1` ADD COLUMN `j` INT
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t2`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`i` INT,INDEX `k`(`i`)) ENGINE = innodb
+ALTER TABLE `test`.`t1`  /* AlterTableAlgorithm is not supported */ 
+ALTER TABLE `test`.`t1` RENAME INDEX `k` TO `kk`
+ALTER TABLE `test`.`t1`  /* AlterTableAlgorithm is not supported */ 
+ALTER TABLE `test`.`t1` RENAME INDEX `kk` TO `kkk`
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`a` INT,`b` INT,`c` INT,`d` INT,PRIMARY KEY(`a`),INDEX `i1`(`b`),INDEX `i2`(`c`)) ENGINE = innodb
+#ALTER TABLE `test`.`t1` ADD INDEX `i1`(`d`)
+ALTER TABLE `test`.`t1` RENAME INDEX `i1` TO `x`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`a` INT,`b` INT,`c` INT,`d` INT,PRIMARY KEY(`a`),INDEX `i1`(`b`),INDEX `i2`(`c`)) ENGINE = innodb
+#ALTER TABLE `test`.`t1` ADD INDEX `i1`(`d`)
+#ALTER TABLE `test`.`t1` RENAME INDEX `i1` TO `i2`
+ALTER TABLE `test`.`t1` DROP INDEX `i2`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`i` INT,INDEX `x`(`i`)) ENGINE = InnoDB
+ALTER TABLE `test`.`t1` DROP INDEX `x`
+ALTER TABLE `test`.`t1` ADD INDEX `X`(`i`)
+ALTER TABLE `test`.`t1` ALTER COLUMN `i` SET DEFAULT 10
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`pk` INT PRIMARY KEY,`i` INT,`j` INT,INDEX `a`(`i`))
+ALTER TABLE `test`.`t1` ADD COLUMN `k` INT
+ALTER TABLE `test`.`t1` DROP COLUMN `k`
+ALTER TABLE `test`.`t1` ADD COLUMN `k` INT
+ALTER TABLE `test`.`t1` DROP COLUMN `j`
+ALTER TABLE `test`.`t1` CHANGE COLUMN `k` `j` INT
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`id` INT(10) UNSIGNED AUTO_INCREMENT,PRIMARY KEY(`id`)) ENGINE = innodb
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`name` VARCHAR(255) CHARACTER SET UTF8 NOT NULL DEFAULT '',`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,`varchar_var` VARCHAR(255) DEFAULT NULL,`float_var` FLOAT DEFAULT NULL,`float_var2` FLOAT(5,2) DEFAULT NULL,`json_var` JSON DEFAULT NULL,PRIMARY KEY(`id`),UNIQUE `idx`(`varchar_var`, `float_var`)) ENGINE = innodb DEFAULT CHARACTER SET = UTF8MB4
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`id` INT UNSIGNED NOT NULL,`my_first` INT DEFAULT NULL,`my_second` INT(11) DEFAULT NULL,`my_third` VARCHAR(255) DEFAULT NULL,`my_forth` INT(11) NOT NULL,`data` JSON DEFAULT NULL,PRIMARY KEY(`id`)) ENGINE = innodb DEFAULT CHARACTER SET = UTF8MB4
+ALTER TABLE `test`.`t1` ADD UNIQUE(`my_first`, `my_second`, `my_third`)
+ALTER TABLE `test`.`t1` ADD UNIQUE(`my_second`)
+#ALTER TABLE `test`.`t1` DROP PRIMARY KEY
+#ALTER TABLE `test`.`t1` ADD PRIMARY KEY(`my_first`, `my_second`, `my_third`)
+ALTER TABLE `test`.`t1` ADD INDEX(`my_first`, `my_second`, `my_third`)
+ALTER TABLE `test`.`t1` ADD INDEX(`my_second`)
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`tinyint_var` TINYINT NOT NULL,`tinyint_var2` TINYINT UNSIGNED NOT NULL,`smallint_var` SMALLINT NOT NULL,`smallint_var2` SMALLINT UNSIGNED NOT NULL,`mediumint_var` MEDIUMINT NOT NULL,`mediumint_var2` MEDIUMINT UNSIGNED NOT NULL,`int_var` INT NOT NULL,`int_var2` INT UNSIGNED NOT NULL,`bigint_var` BIGINT NOT NULL,`bigint_var2` BIGINT UNSIGNED NOT NULL,`tinytext_var` TINYTEXT NOT NULL,`mediumtext_var` MEDIUMTEXT NOT NULL,`text_var` BLOB NOT NULL,`longtext_var` LONGTEXT NOT NULL,`tinyblob_var` TINYBLOB NOT NULL,`mediumblob_var` MEDIUMBLOB NOT NULL,`blob_var` BLOB NOT NULL,`longblob_var` LONGBLOB NOT NULL,`date_var` DATE NOT NULL,`float_var` FLOAT NOT NULL,`double_var` DOUBLE NOT NULL,`decimal_var` DECIMAL(10,2) NOT NULL,`datetime_var` DATETIME NOT NULL,`timestamp_var` TIMESTAMP NOT NULL,`time_var` TIME NOT NULL,`year_var` YEAR NOT NULL,`enum_var` ENUM('1','2','3') NOT NULL,`set_var` SET('1','2','3') NOT NULL,`bool_var` TINYINT(1) NOT NULL,`char_var` CHAR(10) NOT NULL,`varchar_var` VARCHAR(100) NOT NULL,`binary_var` BINARY(20) NOT NULL,`varbinary_var` VARBINARY(20) NOT NULL,PRIMARY KEY(`int_var`)) ENGINE = innodb DEFAULT CHARACTER SET = UTF8
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`col1` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,`col2` VARCHAR(30) NOT NULL,`col3` VARCHAR(20) NOT NULL,`col4` VARCHAR(4) NOT NULL,`col5` ENUM('pending','active','disabled') NOT NULL,`col6` INT NOT NULL,`to_be_deleted` INT)
+ALTER TABLE `test`.`t1` ADD COLUMN `col4_5` VARCHAR(20) NOT NULL AFTER `col4`
+ALTER TABLE `test`.`t1` ADD COLUMN `col7` VARCHAR(30) NOT NULL AFTER `col5`
+ALTER TABLE `test`.`t1` ADD COLUMN `col8` DATETIME NOT NULL
+ALTER TABLE `test`.`t1` DROP COLUMN `to_be_deleted`
+ALTER TABLE `test`.`t1` CHANGE COLUMN `col2` `fourth` VARCHAR(30) NOT NULL AFTER `col3`
+ALTER TABLE `test`.`t1` MODIFY COLUMN `col6` INT NOT NULL FIRST
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`n1` INT NOT NULL,`n2` INT,`n3` INT,`n4` FLOAT,UNIQUE(`n1`),INDEX(`n1`, `n2`, `n3`, `n4`),INDEX(`n2`, `n3`, `n4`, `n1`),INDEX(`n3`, `n4`, `n1`, `n2`),INDEX(`n4`, `n1`, `n2`, `n3`))
+ALTER TABLE `test`.`t1`  /* AlterTableType(0) is not supported */ 
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`i` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY)
+ALTER TABLE `test`.`t1` RENAME AS `test`.`t2`
+ALTER TABLE `test`.`t2` RENAME AS `test`.`t1`
+ALTER TABLE `test`.`t1` ADD COLUMN `c` CHAR(10) COMMENT 'no comment'
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`host` VARCHAR(16) BINARY NOT NULL DEFAULT '',`user` VARCHAR(16) BINARY NOT NULL DEFAULT '',PRIMARY KEY(`host`, `user`),INDEX(`host`)) ENGINE = myisam
+ALTER TABLE `test`.`t1`  /* AlterTableType(0) is not supported */ 
+ALTER TABLE `test`.`t1`  /* AlterTableType(0) is not supported */ 
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`a` VARCHAR(10) NOT NULL PRIMARY KEY) ENGINE = myisam
+ALTER TABLE `test`.`t1` MODIFY COLUMN `a` VARCHAR(10)
+ALTER TABLE `test`.`t1` MODIFY COLUMN `a` VARCHAR(10) NOT NULL
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`id` INT(11) NOT NULL UNIQUE KEY,`name` VARCHAR(255) NOT NULL UNIQUE KEY,`age` INT(11) DEFAULT NULL) ENGINE = innodb DEFAULT CHARACTER SET = UTF8MB4
+ALTER TABLE `test`.`t1` MODIFY COLUMN `id` INT(11)
+ALTER TABLE `test`.`t1` MODIFY COLUMN `id` INT(11) NOT NULL
+ALTER TABLE `test`.`t1` ADD UNIQUE(`name`)
+ALTER TABLE `test`.`t1` DROP INDEX `name`
+ALTER TABLE `test`.`t1` DROP INDEX `name_2`
+ALTER TABLE `test`.`t1` ADD UNIQUE(`name`)
+ALTER TABLE `test`.`t1` MODIFY COLUMN `name` VARCHAR(255) NOT NULL
+ALTER TABLE `test`.`t1` MODIFY COLUMN `id` INT(11)
+ALTER TABLE `test`.`t1` ADD UNIQUE(`name`)
+ALTER TABLE `test`.`t1` DROP INDEX `name`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`i` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY)
+#ALTER TABLE `test`.`t1` DROP COLUMN `i`
+#ALTER TABLE `test`.`t1` ADD COLUMN `i1` INT NOT NULL AUTO_INCREMENT
+#ALTER TABLE `test`.`t1` DROP PRIMARY KEY
+#ALTER TABLE `test`.`t1` ADD PRIMARY KEY(`i1`)
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`a` CHAR(10) CHARACTER SET LATIN1)
+#ALTER TABLE `test`.`t1` DEFAULT CHARACTER SET = LATIN1
+#ALTER TABLE `test`.`t1` DEFAULT CHARACTER SET = CP1251
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`myblob` LONGBLOB,`mytext` LONGTEXT,`myvarchar` VARCHAR(255)) DEFAULT CHARACTER SET = LATIN1 DEFAULT COLLATE = LATIN1_GENERAL_CS
+#ALTER TABLE `test`.`t1` DEFAULT CHARACTER SET = LATIN1
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`city_demo` (`city` VARCHAR(50) NOT NULL)
+ALTER TABLE `test`.`city_demo` ADD INDEX(`city`(6))
+DROP TABLE IF EXISTS `test`.`city_demo`
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t2`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`name` CHAR(15))
+CREATE TABLE IF NOT EXISTS `test`.`t2` (`name` CHAR(15))
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t2`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`c1` INT)
+CREATE DATABASE IF NOT EXISTS `anothertest`
+ALTER TABLE `test`.`t1` RENAME AS `anothertest`.`t1`
+ALTER TABLE `anothertest`.`t1` RENAME AS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`c1` INT)
+DROP DATABASE IF EXISTS `anothertest`
+ALTER TABLE `test`.`t1` RENAME AS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`f1` INT)
+ALTER TABLE `test`.`t1` ADD COLUMN `f2` DATETIME NOT NULL
+ALTER TABLE `test`.`t1` ADD COLUMN `f21` DATE NOT NULL
+ALTER TABLE `test`.`t1` ADD COLUMN `f4` DATETIME NOT NULL DEFAULT '2002-02-02'
+ALTER TABLE `test`.`t1` ADD COLUMN `f41` DATE NOT NULL DEFAULT '2002-02-02'
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`a` VARCHAR(500))
+ALTER TABLE `test`.`t1` ADD COLUMN `b` TEXT
+ALTER TABLE `test`.`t1` ADD INDEX(`b`(50))
+ALTER TABLE `test`.`t1` ADD COLUMN `d` INT
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`s` CHAR(8) BINARY)
+ALTER TABLE `test`.`t1` MODIFY COLUMN `s` CHAR(10) BINARY
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`s` BINARY(8))
+ALTER TABLE `test`.`t1` MODIFY COLUMN `s` BINARY(10)
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`ti1`
+DROP TABLE IF EXISTS `test`.`ti2`
+DROP TABLE IF EXISTS `test`.`ti3`
+DROP TABLE IF EXISTS `test`.`tm1`
+DROP TABLE IF EXISTS `test`.`tm2`
+DROP TABLE IF EXISTS `test`.`tm3`
+CREATE TABLE IF NOT EXISTS `test`.`ti1` (`a` INT NOT NULL,`b` INT,`c` INT) ENGINE = innodb
+CREATE TABLE IF NOT EXISTS `test`.`tm1` (`a` INT NOT NULL,`b` INT,`c` INT) ENGINE = myisam
+CREATE TABLE IF NOT EXISTS `test`.`ti2` (`a` INT PRIMARY KEY AUTO_INCREMENT,`b` INT,`c` INT) ENGINE = innodb
+CREATE TABLE IF NOT EXISTS `test`.`tm2` (`a` INT PRIMARY KEY AUTO_INCREMENT,`b` INT,`c` INT) ENGINE = myisam
+ALTER TABLE `test`.`ti1` 
+ALTER TABLE `test`.`tm1` 
+ALTER TABLE `test`.`ti1` ADD COLUMN `d` VARCHAR(200)
+ALTER TABLE `test`.`tm1` ADD COLUMN `d` VARCHAR(200)
+ALTER TABLE `test`.`ti1` ADD COLUMN `d2` VARCHAR(200)
+ALTER TABLE `test`.`tm1` ADD COLUMN `d2` VARCHAR(200)
+ALTER TABLE `test`.`ti1` ADD COLUMN `e` ENUM('a','b') FIRST
+ALTER TABLE `test`.`tm1` ADD COLUMN `e` ENUM('a','b') FIRST
+ALTER TABLE `test`.`ti1` ADD COLUMN `f` INT AFTER `a`
+ALTER TABLE `test`.`tm1` ADD COLUMN `f` INT AFTER `a`
+ALTER TABLE `test`.`ti1` ADD INDEX `ii1`(`b`)
+ALTER TABLE `test`.`tm1` ADD INDEX `im1`(`b`)
+ALTER TABLE `test`.`ti1` ADD UNIQUE `ii2`(`c`)
+ALTER TABLE `test`.`tm1` ADD UNIQUE `im2`(`c`)
+ALTER TABLE `test`.`ti1` ADD FULLTEXT `ii3`(`d`)
+ALTER TABLE `test`.`tm1` ADD FULLTEXT `im3`(`d`)
+ALTER TABLE `test`.`ti1` ADD FULLTEXT `ii4`(`d2`)
+ALTER TABLE `test`.`tm1` ADD FULLTEXT `im4`(`d2`)
+#ALTER TABLE `test`.`ti1` ADD PRIMARY KEY(`a`)
+#ALTER TABLE `test`.`tm1` ADD PRIMARY KEY(`a`)
+#ALTER TABLE `test`.`ti1` DROP INDEX `ii3`
+#ALTER TABLE `test`.`tm1` DROP INDEX `im3`
+ALTER TABLE `test`.`ti1` DROP COLUMN `d2`
+ALTER TABLE `test`.`tm1` DROP COLUMN `d2`
+ALTER TABLE `test`.`ti1` DROP INDEX `ii1`
+ALTER TABLE `test`.`tm1` DROP INDEX `im1`
+#ALTER TABLE `test`.`ti1` ADD CONSTRAINT `fi1` FOREIGN KEY (`b`) REFERENCES `ti2`(`a`)
+#ALTER TABLE `test`.`tm1` ADD CONSTRAINT `fm1` FOREIGN KEY (`b`) REFERENCES `tm2`(`a`)
+#ALTER TABLE `test`.`tm1` ADD CONSTRAINT `fm2` FOREIGN KEY (`b`) REFERENCES `tm2`(`a`)
+ALTER TABLE `test`.`ti1` ADD INDEX(`b`)
+ALTER TABLE `test`.`tm1` ADD INDEX(`b`)
+ALTER TABLE `test`.`ti1` ALTER COLUMN `b` SET DEFAULT 1
+ALTER TABLE `test`.`tm1` ALTER COLUMN `b` SET DEFAULT 1
+ALTER TABLE `test`.`ti1` ALTER COLUMN `b` DROP DEFAULT
+ALTER TABLE `test`.`tm1` ALTER COLUMN `b` DROP DEFAULT
+DROP TABLE IF EXISTS `test`.`ti1`
+CREATE TABLE IF NOT EXISTS `test`.`ti1` (`a` INT PRIMARY KEY AUTO_INCREMENT,`b` INT) ENGINE = innodb
+ALTER TABLE `test`.`ti1` RENAME AS `test`.`ti3`
+ALTER TABLE `test`.`ti3` ADD INDEX `ii1`(`b`)
+ALTER TABLE `test`.`ti3` DROP INDEX `ii1`
+ALTER TABLE `test`.`ti3` AUTO_INCREMENT = 5
+ALTER TABLE `test`.`ti3` ADD INDEX `ii1`(`b`)
+ALTER TABLE `test`.`ti3` AUTO_INCREMENT = 7
+DROP TABLE IF EXISTS `test`.`ti3`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`id` INT,`name` VARCHAR(200))
+ALTER TABLE `test`.`t1` ADD INDEX `idx1`(`name`)
+#ALTER TABLE `test`.`t1` ADD INDEX `idx1`(`id`)
+ALTER TABLE `test`.`t1` DROP INDEX `idx1`
+DROP TABLE IF EXISTS `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t2`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`id` INT,`name` VARCHAR(200))
+CREATE TABLE IF NOT EXISTS `test`.`t2` LIKE `test`.`t1`
+DROP TABLE IF EXISTS `test`.`t2`
+DROP TABLE IF EXISTS `test`.`t1`
+CREATE TABLE IF NOT EXISTS `test`.`t1` (`id` INT,`name` VARCHAR(200))
+ALTER TABLE `test`.`t1` ADD INDEX `name_idx`(`name`)
+DROP TABLE IF EXISTS `test`.`product_order`
+DROP TABLE IF EXISTS `test`.`product`
+DROP TABLE IF EXISTS `test`.`customer`
+CREATE TABLE IF NOT EXISTS `test`.`product` (`category` INT NOT NULL,`id` INT NOT NULL,`price` DECIMAL,PRIMARY KEY(`category`, `id`)) ENGINE = innodb
+CREATE TABLE IF NOT EXISTS `test`.`customer` (`id` INT NOT NULL,PRIMARY KEY(`id`)) ENGINE = innodb
+CREATE TABLE IF NOT EXISTS `test`.`product_order` (`no` INT NOT NULL AUTO_INCREMENT,`product_category` INT NOT NULL,`product_id` INT NOT NULL,`customer_id` INT NOT NULL,PRIMARY KEY(`no`),INDEX(`product_category`, `product_id`),INDEX(`customer_id`),CONSTRAINT FOREIGN KEY (`product_category`, `product_id`) REFERENCES `product`(`category`, `id`),CONSTRAINT FOREIGN KEY (`customer_id`) REFERENCES `customer`(`id`)) ENGINE = innodb

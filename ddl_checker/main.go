@@ -18,18 +18,21 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/pkg/profile"
+	"io"
 	"os"
 	"strings"
 	"unicode"
 
+	//"github.com/pkg/profile"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pingcap/errors"
-	"github.com/pingcap/tidb-tools/pkg/dbutil"
+	//"github.com/pingcap/tidb-tools/pkg/dbutil"
 	"github.com/pingcap/tidb-tools/pkg/ddl-checker"
 )
 
 var (
-	mode              = auto
+	mode              = offline
 	executableChecker *checker.ExecutableChecker
 	ddlSyncer         *checker.DDLSyncer
 	reader            *bufio.Reader
@@ -59,40 +62,105 @@ const (
 	offline = "offline"
 )
 
+func parseFile() ([]string, error) {
+	file, err := os.Open("ddl.sql")
+	defer file.Close()
+	if err != nil {
+		return nil, err
+	}
+	buf := bufio.NewReader(file)
+	sqls := make([]string, 0, 0)
+	for {
+		line, err := buf.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			fmt.Println("read error: %s\n", err)
+		}
+
+		// Ignore '\n' on Linux or '\r\n' on Windows
+		line = strings.TrimRightFunc(line, func(c rune) bool {
+			return c == '\r' || c == '\n'
+		})
+
+		lineTrimed := strings.TrimSpace(line)
+		if lineTrimed == "" {
+			continue
+		}
+		if lineTrimed[0] == '#' {
+			continue
+		}
+		if lineTrimed[0] == '-' && lineTrimed[1] == '-' {
+			continue
+		}
+
+		sqls = append(sqls, line)
+	}
+	return sqls, nil
+}
+
 func main() {
 	fmt.Print(welcomeInfo)
+	mode=offline
 	initialise()
-	mainLoop()
+	//mainLoop()
+	sqls := make([]string, 0)
+	for i := 0; i < 10; i ++ {
+		tsqls, err := parseFile()
+		for _, s := range tsqls {
+			fmt.Println(s)
+		}
+		if err != nil {
+			fmt.Println("error occur during parse file:", err)
+		}
+		sqls = append(sqls, tsqls...)
+	}
+
+
+	fmt.Println("total ddl statement count:", len(sqls))
+	stopper := profile.Start(profile.CPUProfile, profile.ProfilePath("./cpu"))
+	//mstopper := profile.Start(profile.MemProfile, profile.ProfilePath("./mem"))
+	defer stopper.Stop()
+	//defer mstopper.Stop()
+
+	for i, sql := range sqls {
+		err := executableChecker.Execute(tidbContext, sql)
+		if err != nil {
+			fmt.Println("error occur during execution: ", err, sql, i)
+			break
+		}
+	}
+	fmt.Println("execution success")
 	destroy()
 }
 
 func initialise() {
 	flag.Parse()
 	var err error
-	reader = bufio.NewReader(os.Stdin)
+	//reader = bufio.NewReader(os.Stdin)
 	executableChecker, err = checker.NewExecutableChecker()
 	if err != nil {
 		fmt.Printf("[DDLChecker] Init failed, can't create ExecutableChecker: %s\n", err.Error())
 		os.Exit(1)
 	}
-	executableChecker.Execute(tidbContext, "use test;")
-	dbInfo := &dbutil.DBConfig{
-		User:     *username,
-		Password: *password,
-		Host:     *host,
-		Port:     *port,
-		Schema:   *schema,
-	}
-	ddlSyncer, err = checker.NewDDLSyncer(dbInfo, executableChecker)
-	if err != nil {
-		fmt.Printf("[DDLChecker] Init failed, can't open mysql database: %s\n", err.Error())
-		os.Exit(1)
-	}
+	//executableChecker.Execute(tidbContext, "use test;")
+	//dbInfo := &dbutil.DBConfig{
+	//	User:     *username,
+	//	Password: *password,
+	//	Host:     *host,
+	//	Port:     *port,
+	//	Schema:   *schema,
+	//}
+	//ddlSyncer, err = checker.NewDDLSyncer(dbInfo, executableChecker)
+	//if err != nil {
+	//	fmt.Printf("[DDLChecker] Init failed, can't open mysql database: %s\n", err.Error())
+	//	os.Exit(1)
+	//}
 }
 
 func destroy() {
 	executableChecker.Close()
-	ddlSyncer.Close()
+	//ddlSyncer.Close()
 }
 
 func mainLoop() {
@@ -114,6 +182,16 @@ func handler(input string) bool {
 	// cmd exit
 	if lowerTrimInput == "exit" {
 		return false
+	}
+	if strings.HasPrefix(lowerTrimInput, "query") {
+		x := strings.TrimSpace(lowerTrimInput[7:])
+		err := executableChecker.Query(tidbContext, x)
+		if err == nil {
+			fmt.Println("[DDLChecker] SQL query succeeded")
+		} else {
+			fmt.Println("[DDLChecker] SQL query failed:", err.Error())
+		}
+		return true
 	}
 	// cmd setmod
 	if strings.HasPrefix(lowerTrimInput, "setmod") {

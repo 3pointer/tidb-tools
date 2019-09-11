@@ -16,6 +16,7 @@ package checker
 import (
 	"context"
 	"fmt"
+	"github.com/pingcap/tidb/statistics"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
@@ -67,6 +68,25 @@ func (ec *ExecutableChecker) Execute(context context.Context, sql string) error 
 		return errors.Trace(err)
 	}
 	return nil
+}
+
+func (ec *ExecutableChecker) Query(context context.Context, sql string) error {
+	rows, err := ec.session.Execute(context, sql)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	for _, row := range rows {
+		req := row.NewRecordBatch()
+		row.Next(context, req)
+		datums := statistics.RowToDatums(req.GetRow(0), row.Fields())
+		for _, i := range datums {
+			fmt.Println("i.GetString():", i.GetString())
+		}
+	}
+
+	return nil
+
 }
 
 // IsTableExist returns whether the table with the specified name exists
