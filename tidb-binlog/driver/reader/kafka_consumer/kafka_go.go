@@ -15,6 +15,7 @@ package kafka_consumer
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
@@ -29,6 +30,8 @@ const (
 type KafkaGO struct {
 	// client is high level api, only can consumer from offset
 	client *kafka.Reader
+	// consumer group
+	clients []*kafka.Reader
 	// conn is low level api, which has createTopic DeleteTopic and other more function than *kafka.Reader
 	conn *kafka.Conn
 
@@ -47,6 +50,15 @@ func NewKafkaGoConsumer(cfg *KafkaConfig) (Consumer, error) {
 		cancel()
 		return nil, errors.Trace(err)
 	}
+	clients := make([]*kafka.Reader, 0, 7)
+	clients = append(clients, kafka.NewReader(kafka.ReaderConfig{
+		Brokers:   cfg.Addr,
+		Topic:     cfg.Topic,
+		GroupID:   cfg.Topic + "consumer_group",
+		Partition: int(cfg.Partition),
+		MinBytes:  10e3, // 1KB
+		MaxBytes:  10e6, // 1MB
+	}))
 	return &KafkaGO{
 		client: kafka.NewReader(kafka.ReaderConfig{
 			Brokers:   cfg.Addr,
@@ -55,38 +67,69 @@ func NewKafkaGoConsumer(cfg *KafkaConfig) (Consumer, error) {
 			MinBytes:  10e3, // 1KB
 			MaxBytes:  10e6, // 1MB
 		}),
-		conn:   conn,
-		ctx:    ctx,
-		cancel: cancel,
+		clients: clients,
+		conn:    conn,
+		ctx:     ctx,
+		cancel:  cancel,
 	}, nil
 }
 
 // ConsumerFromOffset implements Consumer.ConsumerFromOffset
 func (k *KafkaGO) ConsumeFromOffset(offset int64, consumerChan chan<- *KafkaMsg, done <-chan struct{}) error {
-	err := k.client.SetOffset(offset)
-	if err != nil {
-		return errors.Trace(err)
+	//err := k.client.SetOffset(offset)
+	//if err != nil {
+	//	return errors.Trace(err)
+	//}
+	for _, cli := range k.clients {
+		err := cli.SetOffset(offset)
+		if err != nil {
+			return errors.Trace(err)
+		}
 	}
+
 	for {
 		select {
 		case <-done:
 			log.Info("finish consumer")
 			return nil
 		default:
-			ctx, cancel := context.WithTimeout(k.ctx, KafkaWaitTimeout)
-			kmsg, err := k.client.ReadMessage(ctx)
-			cancel()
-			if err != nil {
-				log.Warn("kafka-go consume from offset failed",
-					zap.Int64("offset", k.client.Offset()),
-					zap.Error(err))
-				continue
+			var wg sync.WaitGroup
+			for _, cli := range k.clients {
+				wg.Add(1)
+				go func(cli *kafka.Reader) {
+					defer wg.Done()
+					ctx, cancel := context.WithTimeout(k.ctx, KafkaWaitTimeout)
+					kmsg, err := k.client.ReadMessage(ctx)
+					cancel()
+					if err != nil {
+						log.Warn("kafka-go consume from offset failed",
+							zap.Int64("offset", k.client.Offset()),
+							zap.Error(err))
+						return
+					}
+					msg := &KafkaMsg{
+						Value:  kmsg.Value,
+						Offset: kmsg.Offset,
+					}
+					consumerChan <- msg
+				}(cli)
 			}
-			msg := &KafkaMsg{
-				Value:  kmsg.Value,
-				Offset: kmsg.Offset,
-			}
-			consumerChan <- msg
+			wg.Wait()
+
+			//ctx, cancel := context.WithTimeout(k.ctx, KafkaWaitTimeout)
+			//kmsg, err := k.client.ReadMessage(ctx)
+			//cancel()
+			//if err != nil {
+			//	log.Warn("kafka-go consume from offset failed",
+			//		zap.Int64("offset", k.client.Offset()),
+			//		zap.Error(err))
+			//	continue
+			//}
+			//msg := &KafkaMsg{
+			//	Value:  kmsg.Value,
+			//	Offset: kmsg.Offset,
+			//}
+			//consumerChan <- msg
 		}
 	}
 }
