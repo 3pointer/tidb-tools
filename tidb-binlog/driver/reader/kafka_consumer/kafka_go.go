@@ -35,8 +35,11 @@ type KafkaGO struct {
 	// conn is low level api, which has createTopic DeleteTopic and other more function than *kafka.Reader
 	conn *kafka.Conn
 
-	ctx    context.Context
-	cancel context.CancelFunc
+	addr      []string
+	topic     string
+	partition int
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // NewKafkaGoConsumer return kafka-go consumer on specify topic and partition
@@ -50,15 +53,7 @@ func NewKafkaGoConsumer(cfg *KafkaConfig) (Consumer, error) {
 		cancel()
 		return nil, errors.Trace(err)
 	}
-	clients := make([]*kafka.Reader, 0, 7)
-	clients = append(clients, kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   cfg.Addr,
-		Topic:     cfg.Topic,
-		GroupID:   cfg.Topic + "consumer_group",
-		Partition: int(cfg.Partition),
-		MinBytes:  10e3, // 1KB
-		MaxBytes:  10e6, // 1MB
-	}))
+
 	return &KafkaGO{
 		client: kafka.NewReader(kafka.ReaderConfig{
 			Brokers:   cfg.Addr,
@@ -67,25 +62,28 @@ func NewKafkaGoConsumer(cfg *KafkaConfig) (Consumer, error) {
 			MinBytes:  10e3, // 1KB
 			MaxBytes:  10e6, // 1MB
 		}),
-		clients: clients,
-		conn:    conn,
-		ctx:     ctx,
-		cancel:  cancel,
+
+		topic:     cfg.Topic,
+		addr:      cfg.Addr,
+		partition: int(cfg.Partition),
+		conn:      conn,
+		ctx:       ctx,
+		cancel:    cancel,
 	}, nil
 }
 
 // ConsumerFromOffset implements Consumer.ConsumerFromOffset
 func (k *KafkaGO) ConsumeFromOffset(offset int64, consumerChan chan<- *KafkaMsg, done <-chan struct{}) error {
-	//err := k.client.SetOffset(offset)
-	//if err != nil {
-	//	return errors.Trace(err)
-	//}
-	for _, cli := range k.clients {
-		err := cli.SetOffset(offset)
-		if err != nil {
-			return errors.Trace(err)
-		}
-	}
+	clients := make([]*kafka.Reader, 0, 7)
+	clients = append(clients, kafka.NewReader(kafka.ReaderConfig{
+		Brokers:     k.addr,
+		Topic:       k.topic,
+		GroupID:     k.topic + "consumer_group",
+		Partition:   k.partition,
+		MinBytes:    10e3, // 1KB
+		MaxBytes:    10e6, // 1MB
+		StartOffset: offset,
+	}))
 
 	for {
 		select {
@@ -94,7 +92,7 @@ func (k *KafkaGO) ConsumeFromOffset(offset int64, consumerChan chan<- *KafkaMsg,
 			return nil
 		default:
 			var wg sync.WaitGroup
-			for _, cli := range k.clients {
+			for _, cli := range clients {
 				wg.Add(1)
 				go func(cli *kafka.Reader) {
 					defer wg.Done()
@@ -103,7 +101,7 @@ func (k *KafkaGO) ConsumeFromOffset(offset int64, consumerChan chan<- *KafkaMsg,
 					cancel()
 					if err != nil {
 						log.Warn("kafka-go consume from offset failed",
-							zap.Int64("offset", k.client.Offset()),
+							zap.Int64("offset", cli.Offset()),
 							zap.Error(err))
 						return
 					}
