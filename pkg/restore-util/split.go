@@ -64,6 +64,9 @@ func (rs *RegionSplitter) Split(
 	if err != nil {
 		return errors.Trace(err)
 	}
+
+	splitRegions := make([]*RegionInfo, 0, rangeTree.tree.Len())
+	splitKeys := make([][]byte, 0, rangeTree.tree.Len())
 	rangeTree.Ascend(func(rg *Range) bool {
 		if rg == nil {
 			return false
@@ -72,18 +75,36 @@ func (rs *RegionSplitter) Split(
 			onSplit(rg)
 		}
 
-		var newRegion *RegionInfo
-		newRegion, err = rs.maybeSplitRegion(ctx, rg)
+		region, splitKey, err := rs.needSplitRegions(ctx, rg)
 		if err != nil {
 			return false
 		}
-		if newRegion != nil {
-			scatterRegions = append(scatterRegions, newRegion)
+		if region != nil {
+			splitRegions = append(splitRegions, region)
+			splitKeys = append(splitKeys, splitKey)
 		}
 		return true
 	})
-	if err != nil {
-		return errors.Trace(err)
+
+	jobCh := make(chan struct{}, 100)
+	var newRegion *RegionInfo
+	for i, sr := range splitRegions {
+		sk := splitKeys[i]
+		go func() {
+			jobCh <- struct{}{}
+			defer func() {
+				<-jobCh
+			}()
+			newRegion, err = rs.maybeSplitRegion(ctx, sr, sk)
+			if err != nil {
+				log.Error("split region failed", zap.Binary("splitKey", sk), zap.Error(err))
+				return
+			}
+			scatterRegions = append(scatterRegions, newRegion)
+		}()
+		if err != nil {
+			return errors.Trace(err)
+		}
 	}
 	log.Info("splitting regions done, wait for scattering regions",
 		zap.Int("regions", len(scatterRegions)), zap.Duration("take", time.Since(startTime)))
@@ -112,7 +133,11 @@ func (rs *RegionSplitter) splitByRewriteRules(
 			onSplit(&rg)
 		}
 
-		newRegion, err := rs.maybeSplitRegion(ctx, &rg)
+		regionInfo, splitKey, err := rs.needSplitRegions(ctx, &rg)
+		if err != nil {
+			return nil, err
+		}
+		newRegion, err := rs.maybeSplitRegion(ctx, regionInfo, splitKey)
 		if err != nil {
 			return nil, err
 		}
@@ -199,7 +224,7 @@ func (rs *RegionSplitter) waitForScatterRegion(ctx context.Context, regionInfo *
 	}
 }
 
-func (rs *RegionSplitter) maybeSplitRegion(ctx context.Context, r *Range) (*RegionInfo, error) {
+func (rs *RegionSplitter) needSplitRegions(ctx context.Context, r *Range) (*RegionInfo, []byte, error) {
 	interval := SplitRetryInterval
 	var err error
 	for i := 0; i < SplitRetryTimes; i++ {
@@ -211,13 +236,33 @@ func (rs *RegionSplitter) maybeSplitRegion(ctx context.Context, r *Range) (*Regi
 		if err == nil {
 			splitKey := r.EndKey
 			if !needSplit(codec.EncodeBytes([]byte{}, splitKey), regionInfo) {
-				return nil, nil
+				return nil, nil, nil
 			}
-			var newRegion *RegionInfo
-			newRegion, err = rs.splitAndScatterRegion(ctx, regionInfo, splitKey)
-			if err == nil {
-				return newRegion, nil
-			}
+			return regionInfo, splitKey, nil
+		}
+		interval = 2 * interval
+		if interval > SplitMaxRetryInterval {
+			interval = SplitMaxRetryInterval
+		}
+		time.Sleep(interval)
+	}
+	return nil, nil, err
+}
+
+func (rs *RegionSplitter) maybeSplitRegion(ctx context.Context, regionInfo *RegionInfo, splitKey []byte) (*RegionInfo, error) {
+	if regionInfo == nil {
+		return nil, nil
+	}
+	interval := SplitRetryInterval
+	var err error
+	for i := 0; i < SplitRetryTimes; i++ {
+		if i > SplitRetryTimes/2 {
+			log.Warn("split region failed, retry it", zap.Error(err), zap.Reflect("key", splitKey))
+		}
+		var newRegion *RegionInfo
+		newRegion, err = rs.splitAndScatterRegion(ctx, regionInfo, splitKey)
+		if err == nil {
+			return newRegion, nil
 		}
 		interval = 2 * interval
 		if interval > SplitMaxRetryInterval {
@@ -238,7 +283,8 @@ func (rs *RegionSplitter) splitAndScatterRegion(ctx context.Context, regionInfo 
 	if err != nil {
 		return nil, err
 	}
-	return newRegion, rs.client.ScatterRegion(ctx, regionInfo)
+	// TODO scatter all split regions
+	return newRegion, rs.client.ScatterRegion(ctx, newRegion)
 }
 
 func needSplit(splitKey []byte, regionInfo *RegionInfo) bool {
