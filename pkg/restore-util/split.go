@@ -238,7 +238,7 @@ func (rs *RegionSplitter) splitAndScatterRegion(ctx context.Context, regionInfo 
 	if err != nil {
 		return nil, err
 	}
-	return newRegion, rs.client.ScatterRegion(ctx, regionInfo)
+	return newRegion, rs.client.ScatterRegion(ctx, newRegion)
 }
 
 func needSplit(splitKey []byte, regionInfo *RegionInfo) bool {
